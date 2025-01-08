@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Janus WebSocket Test</title>
+    <script src="/home/vkyc/vkyc/adapter/release/adapter.js"></script>
+    <script src="/home/vkyc/vkyc/janus-gateway/html/demos/janus.js"></script> <!-- Path to janus.js -->
+</head>
+<body>
+    <h1>Janus WebSocket Example</h1>
+    <div id="status">Connecting to Janus...</div>
+    <script>
+        const server = "ws://localhost:8188"; // Replace with your server IP
+
+        // Initialize the Janus object
+        var janus = null;
+        var sfutest = null;
+        var opaqueId = "demo-"+Janus.randomString(12);
+
+        // Initialize Janus
+        Janus.init({debug: true, callback: function() {
+            janus = new Janus({
+                server: server,
+                success: function() {
+                    // Create a session
+                    janus.attach({
+                        plugin: "janus.plugin.echotest",  // EchoTest plugin
+                        opaqueId: opaqueId,
+                        success: function(pluginHandle) {
+                            // sfutest = pluginHandle;
+                            console.log("Plugin attached successfully");
+                            console.log(pluginHandle.getPlugin());
+                            
+                            // Send a message to the plugin (for example, create a test)
+                            // sfutest.send({message: { "janus": "ping" }});
+                        },
+                        onmessage: function(msg, jsep) {
+                            console.log("Received message:", msg);
+                            
+                            // Handle incoming messages and JSEP (offer/answer)
+                            if (jsep !== undefined && jsep !== null) {
+                                sfutest.handleRemoteJsep({jsep: jsep});
+                            }
+                        },
+                        onlocalstream: function(stream) {
+                            // Attach the local stream to the video element
+                            let videoElement = document.createElement('video');
+                            videoElement.srcObject = stream;
+                            videoElement.autoplay = true;
+                            document.body.appendChild(videoElement);
+                        },
+                        onremotestream: function(stream) {
+                            // Attach the remote stream (if any) to a new video element
+                            let videoElement = document.createElement('video');
+                            videoElement.srcObject = stream;
+                            videoElement.autoplay = true;
+                            document.body.appendChild(videoElement);
+                        },
+                        oncleanup: function() {
+                            console.log("Cleanup");
+                        }
+                    });
+                },
+                error: function(error) {
+                    console.error("Error initializing Janus:", error);
+                    document.getElementById("status").innerText = "Error connecting to Janus.";
+                },
+                destroyed: function() {
+                    console.log("Janus destroyed");
+                }
+            });
+        }});
+
+    </script>
+</body>
+</html>
